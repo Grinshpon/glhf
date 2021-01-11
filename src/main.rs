@@ -10,6 +10,26 @@ use ggez::event::winit_event::*;
 
 use glsp::prelude::*;
 
+#[derive(Debug)]
+pub enum GlhfError {
+  GgezError(ggez::GameError),
+  GlspError(GError),
+  Error(String),
+}
+
+impl From<ggez::GameError> for GlhfError {
+  fn from(err: ggez::GameError) -> Self {
+    GlhfError::GgezError(err)
+  }
+}
+impl From<GError> for GlhfError {
+  fn from(err: GError) -> Self {
+    GlhfError::GlspError(err)
+  }
+}
+
+type GlhfResult<T=()> = Result<T, GlhfError>;
+
 type RCtx = Rc<RefCell<ggez::Context>>;
 
 struct Callbacks {
@@ -37,61 +57,48 @@ impl Callbacks {
 struct MainState {
   pos_x: f32,
   callbacks: Callbacks,
-  runtime: Runtime,
   context: RCtx,
 }
 
 impl MainState {
-  fn new(runtime: Runtime, ctx: RCtx) -> ggez::GameResult<MainState> {
-    let s = MainState {
+  fn new(ctx: RCtx) -> MainState {
+    MainState {
       pos_x: 0.0,
       callbacks: Callbacks::new(),
-      runtime: runtime,
       context: ctx,
-    };
-    Ok(s)
+    }
   }
 
-  fn load(&mut self) -> Result<(),String> { //todo: actual error type
-    let mut update: Option<Root<GFn>> = None;
-    self.runtime.run(|| {
-      update = match glsp::global::<_, Val>("glhf:update") {
-        Ok(Val::GFn(update)) => Some(update),
-        Ok(val) => {
-          let msg = format!("invalid glhf:update value {}", val);
-          return Ok(Err(String::from(&msg)))
-        }
-        Err(_) => return Ok(Err(String::from("glhf:update is not defined")))
-      };
-      Ok(Ok(()))
-    }).unwrap()?;
-
-    self.callbacks.update = update;
+  fn load(&mut self) -> GlhfResult {
+    self.callbacks.update = match glsp::global::<_, Val>("glhf:update") {
+      Ok(Val::GFn(update)) => Some(update),
+      Ok(val) => {
+        let msg = format!("invalid glhf:update value {}", val);
+        return Err(GlhfError::from(GError::from_str(&msg)))
+      }
+      Err(_) => return Err(GlhfError::from(GError::from_str("glhf:update is not defined")))
+    };
     Ok(())
   }
 
-  fn update(&mut self) -> ggez::GameResult {
+  fn update(&mut self) -> GlhfResult {
     if let Ok(ctx) = self.context.try_borrow_mut().as_mut() {
       let dt = ggez::timer::delta(ctx).as_secs_f64();
-      let callbacks = &mut self.callbacks;
-      self.runtime.run(|| {
-        let _: Val = match glsp::call(callbacks.update.as_ref().unwrap(), (dt,)) {
-          Ok(val) => val,
-          Err(glsp_err) => {
-            return Ok(Err(String::from(&glsp_err.to_string())))
-          }
-        };
-        Ok(Ok(()))
-      });
+      let _: Val = match glsp::call(self.callbacks.update.as_ref().unwrap(), (dt,)) {
+        Ok(val) => val,
+        Err(glsp_err) => {
+          return Err(GlhfError::from(glsp_err))
+        }
+      };
       self.pos_x = self.pos_x % 800.0 + 1.0;
       Ok(())
     }
     else {
-      Err(WindowError("Multiple references to context".to_string()))
+      Err(GlhfError::from(WindowError("Multiple references to context".to_string())))
     }
   }
 
-  fn draw(&mut self) -> ggez::GameResult {
+  fn draw(&mut self) -> GlhfResult {
     if let Ok(ctx) = self.context.try_borrow_mut().as_mut() {
       graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
@@ -110,18 +117,11 @@ impl MainState {
     }
     else {
       //panic!("Aieee, something else is holding a reference to the context -- draw!!");
-      Err(WindowError("Multiple references to context".to_string()))
+      Err(GlhfError::from(WindowError("Multiple references to context".to_string())))
     }
   }
 
-  fn gc(&mut self) {
-    self.runtime.run(|| {
-      glsp::gc();
-      Ok(())
-    });
-  }
-
-  fn handle_input(&mut self, events_loop: &mut ggez::event::EventsLoop) -> ggez::GameResult {
+  fn handle_input(&mut self, events_loop: &mut ggez::event::EventsLoop) -> GlhfResult {
     if let Ok(ctx) = self.context.try_borrow_mut().as_mut() {
       // Handle events. Refer to `winit` docs for more information.
       events_loop.poll_events(|event| {
@@ -151,8 +151,7 @@ impl MainState {
       Ok(())
     }
     else {
-      //panic!("Aieee, something else is holding a reference to the context -- draw!!");
-      Err(WindowError("Multiple references to context".to_string()))
+      Err(GlhfError::from(WindowError("Multiple references to context".to_string())))
     }
   }
 }
@@ -166,13 +165,10 @@ fn runtime_init() -> GResult<()> {
   Ok(())
 }
 
-fn run(events_loop: &mut ggez::event::EventsLoop, state: &mut MainState) -> ggez::GameResult {
+fn run(events_loop: &mut ggez::event::EventsLoop, state: &mut MainState) -> GlhfResult {
   let mut continuing = true;
 
-  match state.load() {
-    Ok(_) => (),
-    Err(s) => {eprintln!("{}",s); continuing = false;},
-  }
+  state.load()?;
 
   while continuing {
     if let Ok(ctx) = state.context.try_borrow_mut().as_mut() {
@@ -183,7 +179,7 @@ fn run(events_loop: &mut ggez::event::EventsLoop, state: &mut MainState) -> ggez
     }
     else {
       continuing = false;
-      return Err(WindowError("Multiple references to context".to_string()))
+      return Err(GlhfError::from(WindowError("Multiple references to context".to_string())))
     }
 
     //handle inputs
@@ -196,25 +192,20 @@ fn run(events_loop: &mut ggez::event::EventsLoop, state: &mut MainState) -> ggez
     state.draw()?;
 
     //collect garbage
-    state.gc();
+    glsp::gc();
 
     //limit framerate (is this necessary? or use vsync?)
     ggez::timer::yield_now();
   }
 
-
   //Have to drop the Root<GFn>'s within the Gamelisp runtime environment or else it panics
-  let callbacks = &mut state.callbacks;
-  state.runtime.run(|| {
-    callbacks.unload();
-    Ok(())
-  });
+  state.callbacks.unload();
 
   Ok(())
 }
 
 
-pub fn main() -> ggez::GameResult { 
+pub fn main() -> GlhfResult { 
   //initialize gamelisp runtime
   let runtime = Runtime::new();
   runtime.run(runtime_init);
@@ -225,8 +216,18 @@ pub fn main() -> ggez::GameResult {
   let cb = ggez::ContextBuilder::new("super_simple", "ggez");
   let (mut ctx, mut event_loop) = cb.build()?;
   let rctx = Rc::new(RefCell::new(ctx));
-  let mut state = MainState::new(runtime, rctx)?;
+  let mut state = MainState::new(rctx);
 
   //run game loop
-  run(&mut event_loop, &mut state)
+  let res = runtime.run(|| {
+    let res = run(&mut event_loop, &mut state);
+    match res {
+      Err(GlhfError::GlspError(err)) => Err(err),
+      x => Ok(x),
+    }
+  });
+  match res {
+    Some(ret) => ret,
+    None => Err(GlhfError::Error(String::from("Closed due to Gamelisp errors"))),
+  }
 }
