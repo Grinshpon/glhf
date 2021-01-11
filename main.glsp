@@ -1,5 +1,8 @@
-(prn "hello world")
-(prn (swap-bytes 32768))
+(defn glhf:load ()
+  (prn "hello, world!")
+  (prn (swap-bytes 32768)))
 
 (defn glhf:update (dt)
   (prn dt))
+
+(defn glhf:draw () (no-op))

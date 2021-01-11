@@ -70,6 +70,16 @@ impl MainState {
   }
 
   fn load(&mut self) -> GlhfResult {
+    //get load function
+    self.callbacks.load = match glsp::global::<_, Val>("glhf:load") {
+      Ok(Val::GFn(update)) => Some(update),
+      Ok(val) => {
+        let msg = format!("invalid glhf:load value {}", val);
+        return Err(GlhfError::from(GError::from_str(&msg)))
+      }
+      Err(_) => return Err(GlhfError::from(GError::from_str("glhf:load is not defined")))
+    };
+    //get update function
     self.callbacks.update = match glsp::global::<_, Val>("glhf:update") {
       Ok(Val::GFn(update)) => Some(update),
       Ok(val) => {
@@ -78,6 +88,24 @@ impl MainState {
       }
       Err(_) => return Err(GlhfError::from(GError::from_str("glhf:update is not defined")))
     };
+    //get draw function
+    self.callbacks.draw = match glsp::global::<_, Val>("glhf:draw") {
+      Ok(Val::GFn(update)) => Some(update),
+      Ok(val) => {
+        let msg = format!("invalid glhf:draw value {}", val);
+        return Err(GlhfError::from(GError::from_str(&msg)))
+      }
+      Err(_) => return Err(GlhfError::from(GError::from_str("glhf:draw is not defined")))
+    };
+
+    //call load function
+    let _: Val = match glsp::call(self.callbacks.load.as_ref().unwrap(), ()) {
+      Ok(val) => val,
+      Err(glsp_err) => {
+        return Err(GlhfError::from(glsp_err))
+      }
+    };
+
     Ok(())
   }
 
@@ -142,10 +170,10 @@ impl MainState {
               event::KeyCode::Escape => (), //event::quit(ctx),
               _ => (),
             },
-            x => () //println!("Other window event fired: {:?}", x),
+            _x => () //println!("Other window event fired: {:?}", x),
           },
 
-          x => () //println!("Device event fired: {:?}", x),
+          _x => () //println!("Device event fired: {:?}", x),
         }
       });
       Ok(())
@@ -178,7 +206,7 @@ fn run(events_loop: &mut ggez::event::EventsLoop, state: &mut MainState) -> Glhf
       continuing = ctx.continuing;
     }
     else {
-      continuing = false;
+      //continuing = false;
       return Err(GlhfError::from(WindowError("Multiple references to context".to_string())))
     }
 
@@ -214,7 +242,7 @@ pub fn main() -> GlhfResult {
 
   //initialize ggez and state
   let cb = ggez::ContextBuilder::new("super_simple", "ggez");
-  let (mut ctx, mut event_loop) = cb.build()?;
+  let (ctx, mut event_loop) = cb.build()?;
   let rctx = Rc::new(RefCell::new(ctx));
   let mut state = MainState::new(rctx);
 
