@@ -1,0 +1,5 @@
+(prn "hello world")
+(prn (swap-bytes 32768))
+
+(defn glhf:update (dt)
+  (prn dt))
