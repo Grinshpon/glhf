@@ -5,7 +5,6 @@ use ggez;
 use ggez::event;
 use ggez::graphics;
 use ggez::nalgebra as na;
-use ggez::GameError::WindowError;
 use ggez::event::winit_event::*;
 
 use glsp::prelude::*;
@@ -122,13 +121,20 @@ impl MainState {
       Ok(())
     }
     else {
-      Err(GlhfError::from(WindowError("Multiple references to context".to_string())))
+      Err(GlhfError::Error("Multiple references to context".to_string()))
     }
   }
 
   fn draw(&mut self) -> GlhfResult {
     if let Ok(ctx) = self.context.try_borrow_mut().as_mut() {
       graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+
+      let _: Val = match glsp::call(self.callbacks.draw.as_ref().unwrap(), ()) {
+        Ok(val) => val,
+        Err(glsp_err) => {
+          return Err(GlhfError::from(glsp_err))
+        }
+      };
 
       let circle = graphics::Mesh::new_circle(
         ctx,
@@ -145,7 +151,7 @@ impl MainState {
     }
     else {
       //panic!("Aieee, something else is holding a reference to the context -- draw!!");
-      Err(GlhfError::from(WindowError("Multiple references to context".to_string())))
+      Err(GlhfError::Error("Multiple references to context".to_string()))
     }
   }
 
@@ -179,7 +185,7 @@ impl MainState {
       Ok(())
     }
     else {
-      Err(GlhfError::from(WindowError("Multiple references to context".to_string())))
+      Err(GlhfError::Error("Multiple references to context".to_string()))
     }
   }
 }
@@ -207,7 +213,7 @@ fn run(events_loop: &mut ggez::event::EventsLoop, state: &mut MainState) -> Glhf
     }
     else {
       //continuing = false;
-      return Err(GlhfError::from(WindowError("Multiple references to context".to_string())))
+      return Err(GlhfError::Error("Multiple references to context".to_string()))
     }
 
     //handle inputs
