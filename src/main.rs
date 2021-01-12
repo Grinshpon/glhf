@@ -28,8 +28,7 @@ fn runtime_init(state: &MainState) -> GResult<()> {
       //mode,point,radius,tolerance,color
     //}
   //};
-  //glsp::bind_rfn("new-circle", &Shape::new_circle)?;
-  glsp::bind_rfn("new-dummy-shape", &Shape::new_dummy_shape)?;
+  glsp::bind_rfn("new-circle", &Shape::new_circle)?;
 
   //load main script
   glsp::load("main.glsp")?;

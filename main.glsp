@@ -1,3 +1,5 @@
+; (let circ (new-circle (fill) '(0 0) 1 1 (red)))
+
 (defn glhf:load ()
   (prn "hello, world!")
   (prn (swap-bytes 32768)))
