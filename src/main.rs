@@ -15,17 +15,21 @@ use crate::error::*;
 mod state;
 use crate::state::*;
 
+mod shapes;
+use crate::shapes::*;
 
 fn runtime_init(state: &MainState) -> GResult<()> {
   //create bindings to ggez (TODO)
   glsp::bind_rfn("swap-bytes", &i32::swap_bytes)?; //placeholder
 
-  /*
-  let new_circle = |mode: graphics::DrawMode, point: [f32; 2], radius: f32, tolerance: f32, color: graphics::Color| -> graphics::Mesh {
-    state.new_circle(mode,point,radius,tolerance,color).unwrap()
-  };
-  glsp::bind_rfn("new-circle", &new_circle)?;
-  */
+  //let new_circle = |mode: graphics::DrawMode, point: [f32; 2], radius: f32, tolerance: f32, color: graphics::Color| -> Shape {
+    //state.new_circle(mode,point,radius,tolerance,color).unwrap()
+    //Circle {
+      //mode,point,radius,tolerance,color
+    //}
+  //};
+  //glsp::bind_rfn("new-circle", &Shape::new_circle)?;
+  glsp::bind_rfn("new-dummy-shape", &Shape::new_dummy_shape)?;
 
   //load main script
   glsp::load("main.glsp")?;
