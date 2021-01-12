@@ -1,11 +1,16 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+#![feature(once_cell)] // 1.48.0-nightly (2020-08-28 d006f5734f49625c34d6)
+use std::{lazy::SyncLazy, sync::Mutex};
+
+//use std::cell::RefCell;
+//use std::rc::Rc;
 
 use ggez;
 use ggez::event;
 use ggez::graphics;
 use ggez::nalgebra as na;
 use ggez::event::winit_event::*;
+use ggez::Context;
+use ggez::event::EventsLoop;
 
 use glsp::prelude::*;
 
@@ -15,6 +20,7 @@ use crate::error::*;
 mod state;
 use crate::state::*;
 
+pub static CONTEXT: SyncLazy<Mutex<(Context, EventsLoop)>> = SyncLazy::new(|| Mutex::new(ggez::ContextBuilder::new("super_simple", "ggez").build().unwrap()));
 
 fn runtime_init(state: &MainState) -> GResult<()> {
   //create bindings to ggez (TODO)
@@ -32,25 +38,22 @@ fn runtime_init(state: &MainState) -> GResult<()> {
   Ok(())
 }
 
-fn run(events_loop: &mut ggez::event::EventsLoop, state: &mut MainState) -> GlhfResult {
+fn run(state: &mut MainState) -> GlhfResult {
   let mut continuing = true;
 
   state.load()?;
 
   while continuing {
-    if let Ok(ctx) = state.context.try_borrow_mut().as_mut() {
+    {
+      let ctx = &mut CONTEXT.lock().unwrap().0;
       // Tell the timer stuff a frame has happened.
       // Without this the FPS timer functions and such won't work.
       ctx.timer_context.tick();
       continuing = ctx.continuing;
     }
-    else {
-      //continuing = false;
-      return Err(GlhfError::Error("Multiple references to context".to_string()))
-    }
 
     //handle inputs
-    state.handle_input(events_loop)?;
+    state.handle_input()?;
 
     //update
     state.update()?;
@@ -79,16 +82,15 @@ pub fn main() -> GlhfResult {
   //read configuration from conf.glsp and apply to ggez context builder (TODO)
 
   //initialize ggez and state
-  let cb = ggez::ContextBuilder::new("super_simple", "ggez");
-  let (ctx, mut event_loop) = cb.build()?;
-  let rctx = Rc::new(RefCell::new(ctx));
-  let mut state = MainState::new(rctx);
+  //let cb = ggez::ContextBuilder::new("super_simple", "ggez");
+  //let (ctx, mut event_loop) = cb.build()?;
+  let mut state = MainState::new();
 
   //run game loop
   let res = runtime.run(|| {
     runtime_init(&state)?;
 
-    let res = run(&mut event_loop, &mut state);
+    let res = run(&mut state);
     match res {
       Err(GlhfError::GlspError(err)) => Err(err),
       x => Ok(x),
