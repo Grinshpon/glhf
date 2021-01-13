@@ -101,7 +101,7 @@ impl MainState {
 
   fn clear(&mut self) {
     let ctx = &mut Context::borrow_mut().0;
-    graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+    graphics::clear(ctx, [0.0, 0.0, 0.0, 1.0].into());
   }
 
   fn present(&mut self) -> GlhfResult {

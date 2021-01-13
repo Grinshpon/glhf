@@ -18,6 +18,9 @@ use crate::state::*;
 mod ggez_wrapper;
 use ggez_wrapper as wrapper;
 
+mod conf;
+use crate::conf::*;
+
 pub struct Context(pub ggez::Context);
 impl RGlobal for Context { }
 
@@ -81,7 +84,9 @@ pub fn main() -> GlhfResult {
   //read configuration from conf.glsp and apply to ggez context builder (TODO)
 
   //initialize ggez and state
-  let cb = ggez::ContextBuilder::new("super_simple", "ggez");
+  //todo: give user option to specify id and author somehow (maybe read conf.toml myself, creating Conf and context names in the process?)
+  let config = Config::from_toml();
+  let cb = ggez::ContextBuilder::new("glhf_app", "glhf");
   let (ctx, mut event_loop) = cb.build()?;
   //let rctx = Rc::new(RefCell::new(ctx));
   let mut state = MainState::new();
