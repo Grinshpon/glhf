@@ -1,12 +1,12 @@
 use serde_derive::{Serialize,Deserialize};
 use toml;
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Debug)]
 pub struct Config {
   pub window_setup: Option<WindowSetup>,
 }
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Debug)]
 pub struct WindowSetup {
   pub title: Option<String>,
 }

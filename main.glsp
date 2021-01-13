@@ -7,6 +7,6 @@
   (= pos-x (+ (% pos-x 800) 1)))
   ;(prn dt))
 
-(defn glhf:draw () 
+(defn glhf:draw ()
   (let circ (new-circle draw-mode:fill (arr pos-x 380.0) 100.0 2.0 color:white))
   (draw-shape circ))

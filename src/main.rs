@@ -86,6 +86,7 @@ pub fn main() -> GlhfResult {
   //initialize ggez and state
   //todo: give user option to specify id and author somehow (maybe read conf.toml myself, creating Conf and context names in the process?)
   let config = Config::from_toml();
+  println!("{:?}",config);
   let cb = ggez::ContextBuilder::new("glhf_app", "glhf");
   let (ctx, mut event_loop) = cb.build()?;
   //let rctx = Rc::new(RefCell::new(ctx));
@@ -102,6 +103,7 @@ pub fn main() -> GlhfResult {
       Err(GlhfError::GlspError(err)) => Err(err),
       x => Ok(x),
     }
+    //Ok(res)
   });
   match res {
     Some(ret) => ret,

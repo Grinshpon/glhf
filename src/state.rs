@@ -84,11 +84,15 @@ impl MainState {
     Ok(())
   }
 
-  pub fn update(&mut self) -> GlhfResult {
+  //should I separata these functions that don't need state into a seperate struct/module?
+  fn delta_time() -> f32 {
     let ctx = &mut Context::borrow_mut().0;
-    let dt = ggez::timer::delta(ctx).as_secs_f64();
+    ggez::timer::delta(ctx).as_secs_f32()
     //context has to be dropped before gamelisp functions are called or else we'll get a double borrow
-    drop(ctx);
+  }
+
+  pub fn update(&mut self) -> GlhfResult {
+    let dt = Self::delta_time();
     let _: Val = match glsp::call(self.callbacks.update.as_ref().unwrap(), (dt,)) {
       Ok(val) => val,
       Err(glsp_err) => {
@@ -99,26 +103,26 @@ impl MainState {
     Ok(())
   }
 
-  fn clear(&mut self) {
+  fn clear() {
     let ctx = &mut Context::borrow_mut().0;
     graphics::clear(ctx, [0.0, 0.0, 0.0, 1.0].into());
   }
 
-  fn present(&mut self) -> GlhfResult {
+  fn present() -> GlhfResult {
     let ctx = &mut Context::borrow_mut().0;
     graphics::present(ctx)?;
     Ok(())
   }
 
   pub fn draw(&mut self) -> GlhfResult {
-    self.clear();
+    Self::clear();
     let _: Val = match glsp::call(self.callbacks.draw.as_ref().unwrap(), ()) {
       Ok(val) => val,
       Err(glsp_err) => {
         return Err(GlhfError::from(glsp_err))
       }
     };
-    self.present()
+    Self::present()
   }
 
   pub fn handle_input(&mut self, events_loop: &mut ggez::event::EventsLoop) -> GlhfResult {
