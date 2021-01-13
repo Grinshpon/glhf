@@ -12,9 +12,6 @@ use crate::error::*;
 mod state;
 use crate::state::*;
 
-//mod shapes;
-//use crate::shapes::*;
-
 mod ggez_wrapper;
 use ggez_wrapper as wrapper;
 
