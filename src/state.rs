@@ -1,7 +1,7 @@
 use ggez;
 use ggez::event;
 use ggez::graphics;
-use ggez::nalgebra as na;
+//use ggez::nalgebra as na;
 use ggez::event::winit_event::*;
 
 use glsp::prelude::*;

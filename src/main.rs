@@ -79,28 +79,38 @@ pub fn main() -> GlhfResult {
   let runtime = Runtime::new();
 
   //read configuration from conf.glsp and apply to ggez context builder (TODO)
-
   //initialize ggez and state
   //todo: give user option to specify id and author somehow (maybe read conf.toml myself, creating Conf and context names in the process?)
   let config = Config::from_toml();
   println!("{:?}",config);
   let cb = ggez::ContextBuilder::new("glhf_app", "glhf");
   let (ctx, mut event_loop) = cb.build()?;
-  //let rctx = Rc::new(RefCell::new(ctx));
-  let mut state = MainState::new();
 
-  //run game loop
-  let res = runtime.run(|| {
+  //begin runtime
+  let res : Option<GlhfResult<()>> = runtime.run(move || {
+    /*
+    //turns out I don't need to move the code, just needed to make the closure take ownership
+    let config = Config::from_toml();
+    println!("{:?}",config);
+    let cb = ggez::ContextBuilder::new("glhf_app", "glhf");
+    let (ctx, mut event_loop) = match cb.build() {
+      Ok(x) => x,
+      Err(err) => return Ok(Err(GlhfError::from(err))),
+    };
+    */
     glsp::add_rglobal(Context(ctx));
 
+    let mut state = MainState::new();
+
+    //create bindings
     runtime_init(&state)?;
 
+    //run game loop
     let res = run(&mut event_loop, &mut state);
     match res {
       Err(GlhfError::GlspError(err)) => Err(err),
       x => Ok(x),
     }
-    //Ok(res)
   });
   match res {
     Some(ret) => ret,
