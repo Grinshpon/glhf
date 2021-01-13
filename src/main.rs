@@ -18,6 +18,9 @@ use crate::state::*;
 mod shapes;
 use crate::shapes::*;
 
+pub struct Context(pub ggez::Context);
+impl RGlobal for Context { }
+
 fn runtime_init(state: &MainState) -> GResult<()> {
   //create bindings to ggez (TODO)
   glsp::bind_rfn("swap-bytes", &i32::swap_bytes)?; //placeholder
@@ -41,15 +44,12 @@ fn run(events_loop: &mut ggez::event::EventsLoop, state: &mut MainState) -> Glhf
   state.load()?;
 
   while continuing {
-    if let Ok(ctx) = state.context.try_borrow_mut().as_mut() {
+    {
+      let ctx = &mut Context::borrow_mut().0;
       // Tell the timer stuff a frame has happened.
       // Without this the FPS timer functions and such won't work.
       ctx.timer_context.tick();
       continuing = ctx.continuing;
-    }
-    else {
-      //continuing = false;
-      return Err(GlhfError::Error("Multiple references to context".to_string()))
     }
 
     //handle inputs
@@ -84,11 +84,15 @@ pub fn main() -> GlhfResult {
   //initialize ggez and state
   let cb = ggez::ContextBuilder::new("super_simple", "ggez");
   let (ctx, mut event_loop) = cb.build()?;
-  let rctx = Rc::new(RefCell::new(ctx));
-  let mut state = MainState::new(rctx);
+  //let rctx = Rc::new(RefCell::new(ctx));
+  let mut state = MainState::new();
 
   //run game loop
   let res = runtime.run(|| {
+    //let cb = ggez::ContextBuilder::new("super_simple", "ggez");
+    //let (ctx, mut event_loop) = cb.build()?;
+    glsp::add_rglobal(Context(ctx));
+
     runtime_init(&state)?;
 
     let res = run(&mut event_loop, &mut state);
