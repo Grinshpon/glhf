@@ -1,10 +1,12 @@
-; (let circ (new-circle (fill) '(0 0) 1 1 (red)))
+(let pos-x 0.0)
 
 (defn glhf:load ()
-  (prn "hello, world!")
-  (prn (swap-bytes 32768)))
+  (prn "hello, world!"))
 
 (defn glhf:update (dt)
-  (prn dt))
+  (= pos-x (+ (% pos-x 800) 1)))
+  ;(prn dt))
 
-(defn glhf:draw () (no-op))
+(defn glhf:draw () 
+  (let circ (new-circle draw-mode:fill (arr pos-x 380.0) 100.0 2.0 color:white))
+  (draw-shape circ))

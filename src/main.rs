@@ -1,11 +1,8 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use ggez;
-use ggez::event;
+//use ggez::event;
 use ggez::graphics;
-use ggez::nalgebra as na;
-use ggez::event::winit_event::*;
+//use ggez::nalgebra as na;
+//use ggez::event::winit_event::*;
 
 use glsp::prelude::*;
 
@@ -15,23 +12,24 @@ use crate::error::*;
 mod state;
 use crate::state::*;
 
-mod shapes;
-use crate::shapes::*;
+//mod shapes;
+//use crate::shapes::*;
+
+mod ggez_wrapper;
+use ggez_wrapper as wrapper;
 
 pub struct Context(pub ggez::Context);
 impl RGlobal for Context { }
 
-fn runtime_init(state: &MainState) -> GResult<()> {
+fn runtime_init(_state: &MainState) -> GResult<()> {
   //create bindings to ggez (TODO)
   glsp::bind_rfn("swap-bytes", &i32::swap_bytes)?; //placeholder
 
-  //let new_circle = |mode: graphics::DrawMode, point: [f32; 2], radius: f32, tolerance: f32, color: graphics::Color| -> Shape {
-    //state.new_circle(mode,point,radius,tolerance,color).unwrap()
-    //Circle {
-      //mode,point,radius,tolerance,color
-    //}
-  //};
-  glsp::bind_rfn("new-circle", &Shape::new_circle)?;
+  //glsp::bind_rfn("new-circle", &Shape::new_circle)?;
+  glsp::bind_rfn("new-circle", &wrapper::new_circle)?;
+  glsp::bind_rfn("draw-shape", &wrapper::draw_shape)?;
+  glsp::bind_global("draw-mode:fill", graphics::DrawMode::fill())?;
+  glsp::bind_global("color:white", graphics::WHITE)?;
 
   //load main script
   glsp::load("main.glsp")?;
@@ -50,6 +48,7 @@ fn run(events_loop: &mut ggez::event::EventsLoop, state: &mut MainState) -> Glhf
       // Without this the FPS timer functions and such won't work.
       ctx.timer_context.tick();
       continuing = ctx.continuing;
+      drop(ctx);
     }
 
     //handle inputs
@@ -89,8 +88,6 @@ pub fn main() -> GlhfResult {
 
   //run game loop
   let res = runtime.run(|| {
-    //let cb = ggez::ContextBuilder::new("super_simple", "ggez");
-    //let (ctx, mut event_loop) = cb.build()?;
     glsp::add_rglobal(Context(ctx));
 
     runtime_init(&state)?;

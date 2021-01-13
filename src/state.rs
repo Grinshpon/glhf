@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use ggez;
 use ggez::event;
 use ggez::graphics;
@@ -11,8 +8,6 @@ use glsp::prelude::*;
 
 use crate::error::*;
 use super::Context;
-
-pub type RCtx = Rc<RefCell<ggez::Context>>;
 
 pub struct Callbacks {
   load: Option<Root<GFn>>,
@@ -92,6 +87,8 @@ impl MainState {
   pub fn update(&mut self) -> GlhfResult {
     let ctx = &mut Context::borrow_mut().0;
     let dt = ggez::timer::delta(ctx).as_secs_f64();
+    //context has to be dropped before gamelisp functions are called or else we'll get a double borrow
+    drop(ctx);
     let _: Val = match glsp::call(self.callbacks.update.as_ref().unwrap(), (dt,)) {
       Ok(val) => val,
       Err(glsp_err) => {
@@ -102,29 +99,26 @@ impl MainState {
     Ok(())
   }
 
-  pub fn draw(&mut self) -> GlhfResult {
+  fn clear(&mut self) {
     let ctx = &mut Context::borrow_mut().0;
     graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+  }
 
+  fn present(&mut self) -> GlhfResult {
+    let ctx = &mut Context::borrow_mut().0;
+    graphics::present(ctx)?;
+    Ok(())
+  }
+
+  pub fn draw(&mut self) -> GlhfResult {
+    self.clear();
     let _: Val = match glsp::call(self.callbacks.draw.as_ref().unwrap(), ()) {
       Ok(val) => val,
       Err(glsp_err) => {
         return Err(GlhfError::from(glsp_err))
       }
     };
-
-    let circle = graphics::Mesh::new_circle(
-      ctx,
-      graphics::DrawMode::fill(),
-      na::Point2::new(self.pos_x, 380.0),
-      100.0,
-      2.0,
-      graphics::WHITE,
-    )?;
-    graphics::draw(ctx, &circle, (na::Point2::new(0.0, 0.0),))?;
-
-    graphics::present(ctx)?;
-    Ok(())
+    self.present()
   }
 
   pub fn handle_input(&mut self, events_loop: &mut ggez::event::EventsLoop) -> GlhfResult {
@@ -155,10 +149,5 @@ impl MainState {
       }
     });
     Ok(())
-  }
-
-  fn new_circle(&mut self, mode: graphics::DrawMode, point: [f32; 2], radius: f32, tolerance: f32, color: graphics::Color) -> GlhfResult<graphics::Mesh> {
-    let ctx = &mut Context::borrow_mut().0;
-    from_ggez_result(graphics::Mesh::new_circle(ctx,mode,point,radius,tolerance,color))
   }
 }
