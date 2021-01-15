@@ -77,7 +77,7 @@ pub fn main() -> GlhfResult {
   //todo: give user option to specify id and author somehow (maybe read conf.toml myself, creating Conf and context names in the process?)
   let config = Config::from_toml();
   println!("{:?}",config);
-  let cb = ggez::ContextBuilder::new("glhf_app", "glhf");
+  let cb = config.unwrap_or(Config::new()).into_context_builder();
   let (ctx, mut event_loop) = cb.build()?;
 
   //begin runtime
