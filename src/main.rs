@@ -1,6 +1,6 @@
 use ggez;
 //use ggez::event;
-use ggez::graphics;
+//use ggez::graphics;
 //use ggez::nalgebra as na;
 //use ggez::event::winit_event::*;
 
@@ -22,14 +22,8 @@ pub struct Context(pub ggez::Context);
 impl RGlobal for Context { }
 
 fn runtime_init(_state: &MainState) -> GResult<()> {
-  //create bindings to ggez (TODO)
-  glsp::bind_rfn("swap-bytes", &i32::swap_bytes)?; //placeholder
-
-  //glsp::bind_rfn("new-circle", &Shape::new_circle)?;
-  glsp::bind_rfn("new-circle", &wrapper::new_circle)?;
-  glsp::bind_rfn("draw-shape", &wrapper::draw_shape)?;
-  glsp::bind_global("draw-mode:fill", graphics::DrawMode::fill())?;
-  glsp::bind_global("color:white", graphics::WHITE)?;
+  //create bindings to ggez (WIP)
+  wrapper::make_bindings()?;
 
   //load main script
   glsp::load("main.glsp")?;
