@@ -74,7 +74,6 @@ pub fn main() -> GlhfResult {
 
   //read configuration from conf.glsp and apply to ggez context builder (TODO)
   //initialize ggez and state
-  //todo: give user option to specify id and author somehow (maybe read conf.toml myself, creating Conf and context names in the process?)
   let config = Config::from_toml();
   println!("{:?}",config);
   let cb = config.unwrap_or(Config::new()).into_context_builder();
